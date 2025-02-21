@@ -4,7 +4,7 @@ from models import Autoformer, Transformer, TimesNet, Nonstationary_Transformer,
     Informer, LightTS, Reformer, ETSformer, Pyraformer, PatchTST, MICN, Crossformer, FiLM, iTransformer, \
     Koopa, TiDE, FreTS, TimeMixer, TSMixer, SegRNN, MambaSimple, TemporalFusionTransformer, SCINet, PAttn, TimeXer, \
     TimeBert, ARIMA, AutoARIMA, DeepARIMA, LinearRegression, ExponentialSmoothing, Theta, KalmanFilter, RandomForest, \
-    XGBoost, LightGBM, ARIMA_tta, AutoARIMA_tta, DeepARIMA_tta, ARIMA_plus, ARIMA_plus_tta
+    XGBoost, LightGBM, ARIMA_tta, AutoARIMA_tta, DeepARIMA_tta, ARIMA_plus, ARIMA_plus_tta, moment
 
 
 class Exp_Basic(object):
@@ -39,6 +39,7 @@ class Exp_Basic(object):
             'PAttn': PAttn,
             'TimeXer': TimeXer,
             'TimeBert': TimeBert,
+            'Moment': moment,
         }
         self.statistical_model_dict = {
             'ARIMA': ARIMA,
@@ -64,6 +65,7 @@ class Exp_Basic(object):
 
         self.device = self._acquire_device()
         self.model = self._build_model().to(self.device)
+        print('device:', self.device)
 
     def _build_model(self):
         raise NotImplementedError

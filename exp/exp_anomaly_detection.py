@@ -23,7 +23,22 @@ class Exp_Anomaly_Detection(Exp_Basic):
         super(Exp_Anomaly_Detection, self).__init__(args)
 
     def _build_model(self):
-        model = self.model_dict[self.args.model].Model(self.args).float()
+        if self.args.model == "Moment":
+            moment = self.model_dict[self.args.model]
+            import yaml
+            from argparse import Namespace
+
+            with open("Configs/moment.yaml", "r") as f:
+                config = yaml.load(f, Loader=yaml.FullLoader)
+
+            config = Namespace(**config)
+            config = moment.NamespaceWithDefaults.from_namespace(config)
+            model = self.model_dict[self.args.model].MOMENT(config)
+
+            model.load_state_dict(torch.load("/data/liuhaixuan/iTransformer_exp-master/moment.pth"))
+            print("XXX MOMENT model loaded XXX")
+        else:
+            model = self.model_dict[self.args.model].Model(self.args).float()
 
         if self.args.use_multi_gpu and self.args.use_gpu:
             model = nn.DataParallel(model, device_ids=self.args.device_ids)
@@ -61,7 +76,6 @@ class Exp_Anomaly_Detection(Exp_Basic):
                 #     mask = mask.unsqueeze(2).repeat(1, 1, self.args.patch_len, 1)
                 #     mask[mask <= self.args.mask_rate] = 0  # masked
                 #     mask[mask > self.args.mask_rate] = 1  # remained
-                #     # import pdb; pdb.set_trace()
                 #     mask = mask.view(mask.size(0), -1, mask.size(-1))
                 #     mask[:, :self.args.patch_len, :] = 1  # first patch is always observed
                 #     inp = batch_x.masked_fill(mask == 0, 0)
@@ -70,12 +84,28 @@ class Exp_Anomaly_Detection(Exp_Basic):
                 #     f_dim = -1 if self.args.features == 'MS' else 0
                 #     true = batch_x[:, :, f_dim:]
                 #     mask = mask[:, :, f_dim:]
-                #     # import pdb; pdb.set_trace()
                 #     # loss = criterion(pred[mask == 0], true[mask == 0]).detach().cpu()
                 #     loss = criterion(pred, true).detach().cpu()
                 # else:
                 #     outputs = self.model(batch_x, None, None, None)
-                outputs = self.model(batch_x, None, None, None)
+                if self.args.model == 'Moment':
+                    # random mask
+                    B, T, N = batch_x.shape  # [B, L, M]
+                    # assert T % self.args.patch_len == 0
+                    mask = torch.rand((B, T // self.args.patch_len, N)).to(
+                        self.device
+                    )  # [B, N, M]
+                    mask = mask.unsqueeze(2).repeat(
+                        1, 1, self.args.patch_len, 1
+                    )  # [B, N, P, M]
+                    mask[mask <= self.args.mask_rate] = 0  # masked
+                    mask[mask > self.args.mask_rate] = 1  # remained
+                    mask = mask.view(mask.size(0), -1, mask.size(-1))  # [B, L, M]
+                    mask[:, : self.args.patch_len, :] = 1  # first patch is always observed
+                    inp = batch_x.masked_fill(mask == 0, 0)
+                    outputs = self.model(inp, None, None, None, mask)
+                else:
+                    outputs = self.model(batch_x, None, None, None)
                 f_dim = -1 if self.args.features == 'MS' else 0
                 outputs = outputs[:, :, f_dim:]
                 pred = outputs.detach().cpu()
@@ -129,12 +159,31 @@ class Exp_Anomaly_Detection(Exp_Basic):
                     mask = mask.unsqueeze(2).repeat(1, 1, self.args.patch_len, 1)
                     mask[mask <= self.args.mask_rate] = 0  # masked
                     mask[mask > self.args.mask_rate] = 1  # remained
-                    # import pdb; pdb.set_trace()
                     mask = mask.view(mask.size(0), -1, mask.size(-1))
                     mask[:, :self.args.patch_len, :] = 1  # first patch is always observed
                     inp = batch_x.masked_fill(mask == 0, 0)
                     outputs = self.model(inp, None, None, None)
                     # loss = criterion(pred[mask == 0], true[mask == 0])
+                    loss = criterion(outputs, batch_x)
+                if self.args.model == 'Moment':
+                    # random mask
+                    B, T, N = batch_x.shape  # [B, L, M]
+                    # assert T % self.args.patch_len == 0
+                    mask = torch.rand((B, T // self.args.patch_len, N)).to(
+                        self.device
+                    )  # [B, N, M]
+                    mask = mask.unsqueeze(2).repeat(
+                        1, 1, self.args.patch_len, 1
+                    )  # [B, N, P, M]
+                    mask[mask <= self.args.mask_rate] = 0  # masked
+                    mask[mask > self.args.mask_rate] = 1  # remained
+                    mask = mask.view(mask.size(0), -1, mask.size(-1))  # [B, L, M]
+                    mask[:, : self.args.patch_len, :] = 1  # first patch is always observed
+                    inp = batch_x.masked_fill(mask == 0, 0)
+                    outputs = self.model(inp, None, None, None, mask)
+                    
+                    f_dim = -1 if self.args.features == 'MS' else 0
+                    outputs = outputs[:, :, f_dim:]
                     loss = criterion(outputs, batch_x)
                 else:
                     outputs = self.model(batch_x, None, None, None)
@@ -161,7 +210,6 @@ class Exp_Anomaly_Detection(Exp_Basic):
             train_loss = np.average(train_loss)
             vali_loss = self.vali(vali_data, vali_loader, criterion)
             test_loss = self.vali(test_data, test_loader, criterion)
-            # import pdb; pdb.set_trace()
             self.test(setting)
 
             print("Epoch: {0}, Steps: {1} | Train Loss: {2:.7f} Vali Loss: {3:.7f} Test Loss: {4:.7f}".format(
@@ -216,7 +264,6 @@ class Exp_Anomaly_Detection(Exp_Basic):
                 #     mask = mask.unsqueeze(2).repeat(1, 1, self.args.patch_len, 1)
                 #     mask[mask <= self.args.mask_rate] = 0  # masked
                 #     mask[mask > self.args.mask_rate] = 1  # remained
-                #     # import pdb; pdb.set_trace()
                 #     mask = mask.view(mask.size(0), -1, mask.size(-1))
                 #     mask[:, :self.args.patch_len, :] = 1  # first patch is always observed
                 #     inp = batch_x.masked_fill(mask == 0, 0)
@@ -224,7 +271,24 @@ class Exp_Anomaly_Detection(Exp_Basic):
                 # else:
                 #     outputs = self.model(batch_x, None, None, None)
                     # criterion
-                outputs = self.model(batch_x, None, None, None)
+                if self.args.model == 'Moment':
+                    # random mask
+                    B, T, N = batch_x.shape  # [B, L, M]
+                    # assert T % self.args.patch_len == 0
+                    mask = torch.rand((B, T // self.args.patch_len, N)).to(
+                        self.device
+                    )  # [B, N, M]
+                    mask = mask.unsqueeze(2).repeat(
+                        1, 1, self.args.patch_len, 1
+                    )  # [B, N, P, M]
+                    mask[mask <= self.args.mask_rate] = 0  # masked
+                    mask[mask > self.args.mask_rate] = 1  # remained
+                    mask = mask.view(mask.size(0), -1, mask.size(-1))  # [B, L, M]
+                    mask[:, : self.args.patch_len, :] = 1  # first patch is always observed
+                    inp = batch_x.masked_fill(mask == 0, 0)
+                    outputs = self.model(inp, None, None, None, mask)
+                else:
+                    outputs = self.model(batch_x, None, None, None)
                 score = torch.mean(self.anomaly_criterion(batch_x, outputs), dim=-1)
                 score = score.detach().cpu().numpy()
                 attens_energy.append(score)
@@ -250,7 +314,6 @@ class Exp_Anomaly_Detection(Exp_Basic):
             #     mask = mask.unsqueeze(2).repeat(1, 1, self.args.patch_len, 1)
             #     mask[mask <= self.args.mask_rate] = 0  # masked
             #     mask[mask > self.args.mask_rate] = 1  # remained
-            #     # import pdb; pdb.set_trace()
             #     mask = mask.view(mask.size(0), -1, mask.size(-1))
             #     mask[:, :self.args.patch_len, :] = 1  # first patch is always observed
             #     inp = batch_x.masked_fill(mask == 0, 0)
@@ -329,6 +392,5 @@ class Exp_Anomaly_Detection(Exp_Basic):
         # * visualization
         file_path_border = folder_path + '/' + self.args.data_path[:self.args.data_path.find('.')] + '_AE_border.pdf'
         file_path = folder_path + '/' + self.args.data + '_AE_testset.pdf'
-        import pdb; pdb.set_trace()
         visual_anomaly_segment(input[:,0], output[:,0], pred, gt, file_path)
         return

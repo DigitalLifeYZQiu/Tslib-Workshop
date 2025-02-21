@@ -1,0 +1,29 @@
+# Experiment parameters
+random_seed: 13
+notes: ""
+
+# Encoder (MOMENT) parameters
+task_name: "anomaly-detection"
+debug: False
+# Model parameters
+revin_affine: False
+d_model: null
+dropout: 0.1
+torch_dtype: "bfloat16"
+value_embedding_bias: False # Whether to add biases to the value embeddings
+orth_gain: 1.41
+randomly_initialize_backbone: True # Whether to randomly initialize the encoder
+transformer_type: "encoder_only" # "encoder_decoder" "encoder_only" "decoder_only"
+freeze_transformer_backbone: False # Whether to freeze the transformer backbone
+n_soft_prompt_tokens: 20 # Number of soft prompt tokens
+
+# Model parameters
+model_name: "MOMENT"
+seq_len: 192
+patch_len: 8
+patch_stride_len: 8
+transformer_backbone: 'google/flan-t5-base' # 'google/flan-t5-base' 'google/flan-t5-large'
+add_positional_embedding: True
+set_input_mask: True # True by default
+head_dropout: 0.1
+weight_decay: 0
