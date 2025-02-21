@@ -25,7 +25,7 @@ python -u run.py \
   --c_out 55 \
   --top_k 3 \
   --anomaly_ratio 1 \
-  --batch_size 16 \
+  --batch_size 64 \
   --train_epochs 1 \
   --patch_len 8 \
   --mask_rate 0.25

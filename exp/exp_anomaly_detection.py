@@ -322,7 +322,24 @@ class Exp_Anomaly_Detection(Exp_Basic):
             #     # reconstruction
             #     outputs = self.model(batch_x, None, None, None)
                 # criterion
-            outputs = self.model(batch_x, None, None, None)
+            if self.args.model == 'Moment':
+                # random mask
+                B, T, N = batch_x.shape  # [B, L, M]
+                # assert T % self.args.patch_len == 0
+                mask = torch.rand((B, T // self.args.patch_len, N)).to(
+                    self.device
+                )  # [B, N, M]
+                mask = mask.unsqueeze(2).repeat(
+                    1, 1, self.args.patch_len, 1
+                )  # [B, N, P, M]
+                mask[mask <= self.args.mask_rate] = 0  # masked
+                mask[mask > self.args.mask_rate] = 1  # remained
+                mask = mask.view(mask.size(0), -1, mask.size(-1))  # [B, L, M]
+                mask[:, : self.args.patch_len, :] = 1  # first patch is always observed
+                inp = batch_x.masked_fill(mask == 0, 0)
+                outputs = self.model(inp, None, None, None, mask)
+            else:
+                outputs = self.model(batch_x, None, None, None)
             score = torch.mean(self.anomaly_criterion(batch_x, outputs), dim=-1)
             score = score.detach().cpu().numpy()
             attens_energy.append(score)
