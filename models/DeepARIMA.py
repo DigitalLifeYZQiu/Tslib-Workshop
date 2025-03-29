@@ -9,7 +9,7 @@ import datetime
 
 
 class ARIMA_Scratch:
-	def __init__(self, p: int = 12, d: int = 1, q: int = 0):
+	def __init__(self, p: int = 12, d: int = 1, q: int = 1):
 		"""
 		Initialize the ARIMA model.
 
@@ -55,10 +55,12 @@ class ARIMA_Scratch:
 					ma_term += theta[j] * e[t - j - 1]
 			
 			e[t] = y[t] - ar_term - ma_term
+		# # Compute log-likelihood
+		# ll = -0.5 * n * np.log(2 * np.pi * sigma2) - 0.5 * np.sum(e ** 2) / sigma2
+		# return -ll  # Negative log-likelihood for minimization
 		
-		# Compute log-likelihood
-		ll = -0.5 * n * np.log(2 * np.pi * sigma2) - 0.5 * np.sum(e ** 2) / sigma2
-		return -ll  # Negative log-likelihood for minimization
+		# Compute MSE
+		return np.mean(e ** 2)
 	
 	def difference(self, series: np.ndarray) -> np.ndarray:
 		"""
