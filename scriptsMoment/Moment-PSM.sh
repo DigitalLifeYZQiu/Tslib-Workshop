@@ -17,6 +17,7 @@ python -u run.py \
   --data PSM \
   --features M \
   --seq_len 192 \
+  --stride 192 \
   --pred_len 0 \
   --d_model 8 \
   --d_ff 16 \
