@@ -13,7 +13,7 @@ from sktime.datasets import load_from_tsfile_to_dataframe
 import warnings
 from utils.augmentation import run_augmentation_single
 from Analysis.DataframeAnalysis import DataframeAnalysis
-
+from datetime import datetime
 warnings.filterwarnings('ignore')
 
 
@@ -276,7 +276,14 @@ class Dataset_Custom(Dataset):
         '''
         cols = list(df_raw.columns)
         cols.remove(self.target)
-        cols.remove('date')
+        if self.args.data == 'STPrice':
+            # 合并 time 列和时刻列，并转换为 datetime 类型
+            df_raw['date'] = df_raw.apply(lambda row: datetime.strptime(f"{row['time']} {row['时刻']}", "%Y/%m/%d %H:%M"),
+                                  axis=1)
+            cols.remove('time')
+            cols.remove('时刻')
+        else:
+            cols.remove('date')
         df_raw = df_raw[['date'] + cols + [self.target]]
         num_train = int(len(df_raw) * 0.7)
         num_test = int(len(df_raw) * 0.2)
@@ -385,9 +392,7 @@ class Dataset_M4(Dataset):
             dataset = M4Dataset.load(training=True, dataset_file=self.root_path)
         else:
             dataset = M4Dataset.load(training=False, dataset_file=self.root_path)
-        training_values = np.array(
-            [v[~np.isnan(v)] for v in
-             dataset.values[dataset.groups == self.seasonal_patterns]])  # split different frequencies
+        training_values = np.array([v[~np.isnan(v)] for v in dataset.values[dataset.groups == self.seasonal_patterns]])  # split different frequencies
         self.ids = np.array([i for i in dataset.ids[dataset.groups == self.seasonal_patterns]])
         self.timeseries = [ts for ts in training_values]
 
@@ -603,7 +608,7 @@ class MSLSegLoader(Dataset):
         if self.flag == "train":
             return (self.train.shape[0] - self.win_size) // self.step + 1
         elif (self.flag == 'val'):
-            return (self.val.shape[0] - self.win_size) // self.step + 1
+            return (self.val.shape[0] - self.win_size) // self.win_size + 1
         elif (self.flag == 'test'):
             # return (self.test.shape[0] - self.win_size) // self.step + 1
             return (self.test.shape[0] - self.win_size) // self.win_size + 1
@@ -1059,7 +1064,7 @@ class UEAloader(Dataset):
 
 
 class UCRAnomalyloader(Dataset):
-    def __init__(self, args, root_path,  win_size, flag="train", patch_len=96):
+    def __init__(self, args, root_path,  win_size, step=1, flag="train", patch_len=96):
         self.args = args
         self.root_path = args.root_path
         self.data_path = args.data_path
@@ -1067,7 +1072,7 @@ class UCRAnomalyloader(Dataset):
         self.patch_len = patch_len
         self.flag = flag
         if self.flag == "train":
-            self.stride = 1
+            self.stride = step
         else:
             self.stride = self.seq_len
         

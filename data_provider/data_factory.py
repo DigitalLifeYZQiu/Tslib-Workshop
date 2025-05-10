@@ -9,6 +9,10 @@ data_dict = {
     'ETTh2': Dataset_ETT_hour,
     'ETTm1': Dataset_ETT_minute,
     'ETTm2': Dataset_ETT_minute,
+    'electricity': Dataset_Custom,
+    'exchange_rate': Dataset_Custom,
+    'traffic': Dataset_Custom,
+    'weather': Dataset_Custom,
     'custom': Dataset_Custom,
     'm4': Dataset_M4,
     'PSM': PSMSegLoader,
@@ -23,6 +27,7 @@ data_dict = {
     'SWAT_Original': SWATSegLoader_Original,
     'UEA': UEAloader,
     'UCRA': UCRAnomalyloader,
+    'STPrice': Dataset_Custom,
 }
 
 class DatasetCatalog:
@@ -122,7 +127,7 @@ def data_provider(args, flag):
 
     shuffle_flag = False if (flag == 'test' or flag == 'TEST') else True
     drop_last = False
-    batch_size = 1 if (flag=='test' or flag=='TEST') else args.batch_size
+    batch_size = 1 if (flag=='test' or flag=='TEST') and args.task_name!='test_time_forecast' else args.batch_size
     freq = args.freq
 
     # if args.task_name == 'anomaly_detection':
