@@ -4,7 +4,10 @@ from models import Autoformer, Transformer, TimesNet, Nonstationary_Transformer,
     Informer, LightTS, Reformer, ETSformer, Pyraformer, PatchTST, MICN, Crossformer, FiLM, iTransformer, \
     Koopa, TiDE, FreTS, TimeMixer, TSMixer, SegRNN, MambaSimple, TemporalFusionTransformer, SCINet, PAttn, TimeXer, \
     TimeBert, ARIMA, AutoARIMA, DeepARIMA, LinearRegression, ExponentialSmoothing, Theta, KalmanFilter, RandomForest, \
-    XGBoost, LightGBM, ARIMA_tta, AutoARIMA_tta, DeepARIMA_tta, ARIMA_plus, ARIMA_plus_tta, moment
+    XGBoost, LightGBM, ARIMA_tta, AutoARIMA_tta, DeepARIMA_tta, ARIMA_plus, ARIMA_plus_tta, moment, TimeMixerPP, \
+    torch_ARIMA, torch_ARIMA_MSE, torch_ARIMA_NLL, torch_ARIMA_BFGS, torch_ARIMA_nnModule, torch_ARI_nnModule, \
+    ARIMAppMK1, \
+    ARIMAlinMK1, ARIMAppMK2, ARIMAlinMK2, ARIMAppMK3, ARIMAppMK4, ARIMAlinMK3
 
 
 class Exp_Basic(object):
@@ -40,9 +43,24 @@ class Exp_Basic(object):
             'TimeXer': TimeXer,
             'TimeBert': TimeBert,
             'Moment': moment,
+            'TimeMixerPP': TimeMixerPP,
+            'ARIMAlinMK1': ARIMAlinMK1,
+            'ARIMAlinMK2': ARIMAlinMK2,
+            'ARIMAlinMK3': ARIMAlinMK3,
+            
         }
         self.statistical_model_dict = {
             'ARIMA': ARIMA,
+            'ARIMAppMK1': ARIMAppMK1,
+            'ARIMAppMK2': ARIMAppMK2,
+            'ARIMAppMK3': ARIMAppMK3,
+            'ARIMAppMK4': ARIMAppMK4,
+            'torchARIMA': torch_ARIMA,
+            'torch_ARIMA_MSE': torch_ARIMA_MSE,
+            'torch_ARIMA_NLL': torch_ARIMA_NLL,
+            'torch_ARIMA_BFGS': torch_ARIMA_BFGS,
+            'torch_ARIMA_nnModule': torch_ARIMA_nnModule,
+            'torch_ARI_nnModule': torch_ARI_nnModule,
             'AutoARIMA': AutoARIMA,
             'DeepARIMA': DeepARIMA,
             'LinearRegression': LinearRegression,

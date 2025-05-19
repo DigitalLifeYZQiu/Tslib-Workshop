@@ -129,6 +129,7 @@ class M4Summary:
         others_score = 0
         others_count = 0
         for g in ['Weekly', 'Daily', 'Hourly']:
+            scores_summary[g] = scores[g]
             others_score += scores[g] * group_count(g)
             others_count += group_count(g)
         weighted_score['Others'] = others_score

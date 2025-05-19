@@ -1,6 +1,6 @@
 from data_provider.data_loader import Dataset_ETT_hour, Dataset_ETT_minute, Dataset_Custom, Dataset_M4, PSMSegLoader, \
     MSLSegLoader, SMAPSegLoader, SMDSegLoader, SWATSegLoader, UEAloader, UCRAnomalyloader, SMDSegLoader_Original, \
-    MSLSegLoader_Original, PSMSegLoader_Original, SMAPSegLoader_Original, SWATSegLoader_Original
+    MSLSegLoader_Original, PSMSegLoader_Original, SMAPSegLoader_Original, SWATSegLoader_Original, PressureDataset
 from data_provider.uea import collate_fn
 from torch.utils.data import DataLoader
 
@@ -28,6 +28,7 @@ data_dict = {
     'UEA': UEAloader,
     'UCRA': UCRAnomalyloader,
     'STPrice': Dataset_Custom,
+    'Aircraft': PressureDataset
 }
 
 class DatasetCatalog:
@@ -116,7 +117,7 @@ class DatasetCatalog:
         
         raise RuntimeError("Dataset not available: {}".format(name))
 
-def data_provider(args, flag):
+def data_provider(args, flag, is_normal=True):
     Data = data_dict[args.data]
     if args.use_anylearn:
         Data_ATTRS = DatasetCatalog.get(args.data)
@@ -168,6 +169,22 @@ def data_provider(args, flag):
     else:
         if args.data == 'm4':
             drop_last = False
+        if args.data == 'Aircraft':
+            data_set = Data(
+                args = args,
+                root_path=args.root_path,
+                flag=flag,
+                is_normal=is_normal,
+                seq_len=args.seq_len,
+            )
+            print(flag, len(data_set))
+            data_loader = DataLoader(
+                data_set,
+                batch_size=batch_size,
+                shuffle=shuffle_flag,
+                num_workers=args.num_workers,
+                drop_last=drop_last)
+            return data_set, data_loader
         data_set = Data(
             args = args,
             root_path=args.root_path,

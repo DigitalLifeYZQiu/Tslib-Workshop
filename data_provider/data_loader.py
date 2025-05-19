@@ -14,6 +14,7 @@ import warnings
 from utils.augmentation import run_augmentation_single
 from Analysis.DataframeAnalysis import DataframeAnalysis
 from datetime import datetime
+import random
 warnings.filterwarnings('ignore')
 
 
@@ -360,7 +361,6 @@ class Dataset_Custom(Dataset):
     def inverse_transform(self, data):
         return self.scaler.inverse_transform(data)
 
-
 class Dataset_M4(Dataset):
     def __init__(self, args, root_path, flag='pred', size=None,
                  features='S', data_path='ETTh1.csv',
@@ -487,7 +487,6 @@ class PSMSegLoader_Original(Dataset):
                               index // self.step * self.win_size:index // self.step * self.win_size + self.win_size]), np.float32(
                 self.test_labels[index // self.step * self.win_size:index // self.step * self.win_size + self.win_size])
 
-
 class PSMSegLoader(Dataset):
     def __init__(self, args, root_path, win_size, step=100, flag="train"):
         self.flag = flag
@@ -585,7 +584,6 @@ class MSLSegLoader_Original(Dataset):
                               index // self.step * self.win_size:index // self.step * self.win_size + self.win_size]), np.float32(
                 self.test_labels[index // self.step * self.win_size:index // self.step * self.win_size + self.win_size])
 
-
 class MSLSegLoader(Dataset):
     def __init__(self, args, root_path, win_size, step=100, flag="train"):
         self.flag = flag
@@ -678,7 +676,6 @@ class SMAPSegLoader_Original(Dataset):
             return np.float32(self.test[
                               index // self.step * self.win_size:index // self.step * self.win_size + self.win_size]), np.float32(
                 self.test_labels[index // self.step * self.win_size:index // self.step * self.win_size + self.win_size])
-
 
 class SMAPSegLoader(Dataset):
     def __init__(self, args, root_path, win_size, step=100, flag="train"):
@@ -870,7 +867,6 @@ class SWATSegLoader_Original(Dataset):
                               index // self.step * self.win_size:index // self.step * self.win_size + self.win_size]), np.float32(
                 self.test_labels[index // self.step * self.win_size:index // self.step * self.win_size + self.win_size])
 
-
 class SWATSegLoader(Dataset):
     def __init__(self, args, root_path, win_size, step=100, flag="train"):
         self.flag = flag
@@ -926,7 +922,6 @@ class SWATSegLoader(Dataset):
             return np.float32(self.test[
                               index // self.step * self.win_size:index // self.step * self.win_size + self.win_size]), np.float32(
                 self.test_labels[index // self.step * self.win_size:index // self.step * self.win_size + self.win_size])
-
 
 class UEAloader(Dataset):
     """
@@ -1062,7 +1057,6 @@ class UEAloader(Dataset):
     def __len__(self):
         return len(self.all_IDs)
 
-
 class UCRAnomalyloader(Dataset):
     def __init__(self, args, root_path,  win_size, step=1, flag="train", patch_len=96):
         self.args = args
@@ -1158,3 +1152,140 @@ class UCRAnomalyloader(Dataset):
             return self.data[index:index + self.seq_len, :], self.test_label[index:index + self.seq_len]
         else:
             return self.data[index:index + self.seq_len, :], self.test_label[index:index + self.seq_len]
+
+class PressureDataset(Dataset):
+    r'''
+    南航项目 MEVC 数据集 dataset
+    '''
+    def __init__(self, args, root_path, flag='train', seq_len=96, is_normal=True, scaler=None):
+        self.args = args
+        self.seq_len = seq_len
+        self.stride = self.seq_len
+        self.root_path = root_path
+        self.scale=True
+        
+        # init
+        assert flag in ['train', 'test', 'val']
+        type_map = {'train': 0, 'val': 1, 'test': 2}
+        self.set_type = type_map[flag]
+        
+        print("is_normal:", is_normal)
+        if is_normal:
+            self.feature_priority = [
+                'PHASE1',
+                'TAT',
+                'ALT_STD',
+                'ALT_GPS',
+                'GPS_GS_CA',
+                'GPS_GS_FO',
+                'IVV_CA',
+                'IVV_FO',
+                'N22',
+                'PUD2',
+                'BMPS2',
+                'HPV_ENG2_R',
+                'PRECOOL_TEMP2',
+                'PRECOOL_PRESS2'
+            ]
+        else:
+            self.feature_priority = [
+                'PHASE1',
+                'TAT',
+                'ALT_STD',
+                'ALT_GPS',
+                'GPS_GS_CA',
+                'GPS_GS_FO',
+                'IVV_CA',
+                'IVV_FO',
+                'N21',
+                'PUD1',
+                'BMPS1',
+                'HPV_ENG1_R',
+                'PRECOOL_TEMP1',
+                'PRECOOL_PRESS1'
+            ]
+        
+        all_features = []
+        file_paths = [os.path.join(self.root_path, f) for f in os.listdir(self.root_path) if f.endswith('.csv')]
+        random.shuffle(file_paths)
+        
+        for path in file_paths:
+            df = pd.read_csv(path)
+            
+            # 检查PHASE1列是否存在
+            if 'PHASE1' not in df.columns:
+                print(f"跳过文件 {path}: 缺少PHASE1列")
+                continue
+            
+            # 创建过滤掩码
+            phase_mask = (df['PHASE1'] == 6)
+            
+            # 应用掩码并检查数据有效性
+            df_filtered = df[phase_mask]
+            if len(df_filtered) == 0:
+                print(f"跳过文件 {path}: 无PHASE1=6的数据")
+                continue
+            
+            # 筛选有效特征列（包含PHASE1）
+            valid_features = [col for col in self.feature_priority if col in df_filtered.columns]
+            if not valid_features:
+                print(f"跳过文件 {path}: 无有效特征列")
+                continue
+            
+            # 提取特征和目标
+            features = df_filtered[valid_features].values.astype(np.float32)  # [L,C]
+            # targets = df_filtered[self.target_column].values.astype(np.float32).reshape(-1, 1) #[L,1]
+            
+            all_features.append(features)
+            # all_targets.append(targets)
+        
+        # 数据标准化 (特征和目标使用不同的scaler)
+        if scaler is None:
+            self.scaler = StandardScaler()
+            # self.target_scaler = StandardScaler()
+            
+            # 拟合训练数据
+            self.scaler.fit(np.vstack(all_features))
+            # self.target_scaler.fit(np.vstack(all_targets))
+        else:
+            self.scaler = scaler
+            # self.target_scaler = target_scaler
+        
+        # 处理每个文件生成窗口
+        self.data = []
+        for features in all_features:
+            # 标准化处理
+            features_norm = self.scaler.transform(features)
+            
+            length = len(features)
+            for start in range(0, length - self.seq_len + 1, self.stride):
+                end = start + self.seq_len
+                self.data.append((
+                    features_norm[start:end]  # 标准化后的特征
+                ))
+        
+        num_train = int(len(self.data) * 0.7)
+        num_test = int(len(self.data) * 0.2)
+        num_vali = len(self.data) - num_train - num_test
+        border1s = [0, num_train, len(self.data) - num_test]
+        border2s = [num_train, num_train + num_vali, len(self.data)]
+        border1 = border1s[self.set_type]
+        border2 = border2s[self.set_type]
+        
+        self.split_data = self.data[border1: border2]
+    
+    def get_scalers(self):
+        """返回scaler对象用于后续反标准化"""
+        return self.scaler
+    
+    def __len__(self):
+        return len(self.split_data)
+    
+    def __getitem__(self, idx):
+        features = self.split_data[idx]
+        return (
+            features,
+            features,
+            features,
+            features
+        )

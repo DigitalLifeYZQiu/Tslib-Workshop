@@ -165,7 +165,7 @@ class Exp_Anomaly_Detection(Exp_Basic):
                     outputs = self.model(inp, None, None, None)
                     # loss = criterion(pred[mask == 0], true[mask == 0])
                     loss = criterion(outputs, batch_x)
-                if self.args.model == 'Moment':
+                elif self.args.model == 'Moment':
                     # random mask
                     B, T, N = batch_x.shape  # [B, L, M]
                     # assert T % self.args.patch_len == 0
@@ -181,7 +181,7 @@ class Exp_Anomaly_Detection(Exp_Basic):
                     mask[:, : self.args.patch_len, :] = 1  # first patch is always observed
                     inp = batch_x.masked_fill(mask == 0, 0)
                     outputs = self.model(inp, None, None, None, mask)
-                    
+
                     f_dim = -1 if self.args.features == 'MS' else 0
                     outputs = outputs[:, :, f_dim:]
                     loss = criterion(outputs, batch_x)
@@ -210,7 +210,7 @@ class Exp_Anomaly_Detection(Exp_Basic):
             train_loss = np.average(train_loss)
             vali_loss = self.vali(vali_data, vali_loader, criterion)
             test_loss = self.vali(test_data, test_loader, criterion)
-            self.test(setting)
+            self.test(setting, csv_record=False)
 
             print("Epoch: {0}, Steps: {1} | Train Loss: {2:.7f} Vali Loss: {3:.7f} Test Loss: {4:.7f}".format(
                 epoch + 1, train_steps, train_loss, vali_loss, test_loss))
@@ -225,7 +225,7 @@ class Exp_Anomaly_Detection(Exp_Basic):
 
         return self.model
 
-    def test(self, setting, test=0):
+    def test(self, setting, test=0, csv_record=True):
         test_data, test_loader = self._get_data(flag='test')
         train_data, train_loader = self._get_data(flag='train')
         if test:
@@ -391,23 +391,52 @@ class Exp_Anomaly_Detection(Exp_Basic):
         # print("pred: ", pred.shape)
         # print("gt:   ", gt.shape)
 
-        accuracy = accuracy_score(gt, pred)
-        precision, recall, f_score, support = precision_recall_fscore_support(gt, pred, average='binary')
+        adjaccuracy = accuracy_score(gt, pred)
+        adjprecision, adjrecall, adjf_score, adjsupport = precision_recall_fscore_support(gt, pred, average='binary')
         print("AdjAccuracy : {:0.4f}, AdjPrecision : {:0.4f}, AdjRecall : {:0.4f}, AdjF-score : {:0.4f} ".format(
-            accuracy, precision,
-            recall, f_score))
+            adjaccuracy, adjprecision, adjrecall, adjf_score))
 
-        f = open("result_anomaly_detection.txt", 'a')
-        f.write(setting + "  \n")
-        f.write("Accuracy : {:0.4f}, Precision : {:0.4f}, Recall : {:0.4f}, F-score : {:0.4f} ".format(
-            accuracy, precision,
-            recall, f_score))
-        f.write('\n')
-        f.write('\n')
-        f.close()
+        # f = open("result_anomaly_detection.txt", 'a')
+        # f.write(setting + "  \n")
+        # f.write("Accuracy : {:0.4f}, Precision : {:0.4f}, Recall : {:0.4f}, F-score : {:0.4f} ".format(
+        #     accuracy, precision,
+        #     recall, f_score))
+        # f.write('\n')
+        # f.write('\n')
+        # f.close()
+        
+        if csv_record:
+            # Write results to CSV file
+            import csv, collections
+            results = {
+                "setting": [setting],
+                'Accuracy': accuracy,
+                'Precision': precision,
+                'Recall': recall,
+                'F-score': f_score,
+                'adjAccuracy': adjaccuracy,
+                'adjPrecision': adjprecision,
+                'adjRecall': adjrecall,
+                'adjF-score': adjf_score
+            }
+            # 将非迭代的值包装在列表中
+            for key in results:
+                if not isinstance(results[key], collections.abc.Iterable):
+                    results[key] = [results[key]]
+            
+            csv_file = self.args.csv_file
+            
+            with open(csv_file, 'a', newline='') as file:
+                writer = csv.writer(file)
+                if file.tell() == 0:
+                    writer.writerow(results.keys())
+                writer.writerows(zip(*results.values()))
+            
+            print("Results appended to", csv_file)
+        
         
         # * visualization
-        file_path_border = folder_path + '/' + self.args.data_path[:self.args.data_path.find('.')] + '_AE_border.pdf'
-        file_path = folder_path + '/' + self.args.data + '_AE_testset.pdf'
-        visual_anomaly_segment(input[:,0], output[:,0], pred, gt, file_path)
+        # file_path_border = folder_path + '/' + self.args.data_path[:self.args.data_path.find('.')] + '_AE_border.pdf'
+        # file_path = folder_path + '/' + self.args.data + '_AE_testset.pdf'
+        # visual_anomaly_segment(input[:,0], output[:,0], pred, gt, file_path)
         return

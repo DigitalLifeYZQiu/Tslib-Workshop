@@ -3,8 +3,9 @@ import os
 import torch
 import torch.backends
 from exp.exp_long_term_forecasting import Exp_Long_Term_Forecast
-from exp.exp_imputation import Exp_Imputation
+from exp.exp_test_time_forecasting import Exp_Test_Time_Forecast
 from exp.exp_short_term_forecasting import Exp_Short_Term_Forecast
+from exp.exp_imputation import Exp_Imputation
 from exp.exp_anomaly_detection import Exp_Anomaly_Detection
 from exp.exp_anomaly_detection_LTM import Exp_Anomaly_Detection_LTM
 from exp.exp_classification import Exp_Classification
@@ -29,6 +30,7 @@ if __name__ == '__main__':
     parser.add_argument('--model_id', type=str, required=True, default='test', help='model id')
     parser.add_argument('--model', type=str, required=True, default='Autoformer',
                         help='model name, options: [Autoformer, Transformer, TimesNet]')
+    parser.add_argument('--csv_file', type=str, default='./results.csv', help='csv file path for result recording')
 
     # data loader
     parser.add_argument('--data', type=str, required=True, default='ETTm1', help='dataset type')
@@ -48,6 +50,7 @@ if __name__ == '__main__':
     parser.add_argument('--pred_len', type=int, default=96, help='prediction sequence length')
     parser.add_argument('--seasonal_patterns', type=str, default='Monthly', help='subset for M4')
     parser.add_argument('--inverse', action='store_true', help='inverse output data', default=False)
+    parser.add_argument('--input_zoom', type=int, default=2, help='the zoom ratio of input length / output length')
 
     # inputation task
     parser.add_argument('--mask_rate', type=float, default=0.25, help='mask ratio')
@@ -57,14 +60,11 @@ if __name__ == '__main__':
     parser.add_argument('--ad_mask_type', type=str, default=None, help='The masking type for TimeBert')
     
     # classification task
-    parser.add_argument('--cls_mask_token_only', action='store_true', help='use only cls_mask_token in classification task', default=False)
-    parser.add_argument('--var_mask_token_only', action='store_true',
-                        help='use only variate_mask_token in classification task', default=False)
     parser.add_argument('--knn_neighbors', type=int, default=10, help='knn neighbors')
     # model define
     parser.add_argument('--expand', type=int, default=2, help='expansion factor for Mamba')
     parser.add_argument('--d_conv', type=int, default=4, help='conv kernel size for Mamba')
-    parser.add_argument('--top_k', type=int, default=5, help='for TimesBlock')
+    parser.add_argument('--top_k', type=int, default=3, help='for TimesBlock')
     parser.add_argument('--num_kernels', type=int, default=6, help='for Inception')
     parser.add_argument('--enc_in', type=int, default=7, help='encoder input size')
     parser.add_argument('--dec_in', type=int, default=7, help='decoder input size')
@@ -159,7 +159,25 @@ if __name__ == '__main__':
     parser.add_argument('--patch_len', type=int, default=16, help='patch length')
     
     # TimeBert
-    parser.add_argument('--freeze_patch_encoder', default=False, action="store_true", help='Freeze patch embedding and encoder layers in TimeBert')
+    # parser.add_argument('--freeze_patch_encoder', default=False, action="store_true", help='Freeze patch embedding and encoder layers in TimeBert')
+    # parser.add_argument('--not_use_dataset_token', action='store_true', help='not_use_dataset_token', default=False)
+    # parser.add_argument('--not_use_variate_token', action='store_true', help='not_use_variate_token', default=False)
+    # TimeBert
+    parser.add_argument('--freeze_patch_encoder', default=False, action="store_true",
+                        help='Freeze patch embedding and encoder layers in TimeBert')
+    parser.add_argument('--cls_mask_token_only', action='store_true',
+                        help='use only cls_mask_token in classification task', default=False)
+    parser.add_argument('--var_mask_token_only', action='store_true',
+                        help='use only variate_mask_token in classification task', default=False)
+    parser.add_argument('--subset_rand_ratio', type=float, default=1, help='mask ratio')
+    parser.add_argument('--use_ims', action='store_true', help='Iterated multi-step', default=False)
+    parser.add_argument('--use_finetune', action='store_true', help='Iterated multi-step', default=False)
+    parser.add_argument('--use_channel_independent', action='store_true', help='Use CI', default=False)
+    parser.add_argument('--use_partial_variate', action='store_true', help='Iterated multi-step', default=False)
+    parser.add_argument('--not_use_dataset_token', action='store_true', help='not_use_dataset_token', default=False)
+    parser.add_argument('--not_use_variate_token', action='store_true', help='not_use_variate_token', default=False)
+    parser.add_argument('--use_lm_bert', action='store_true', help='use_lm_bert', default=False)
+    parser.add_argument('--use_vision_bert', action='store_true', help='use_vision_bert', default=False)
     
     # Visualization
     parser.add_argument('--date_record', action='store_true', help='record date in visualization', default=False)
@@ -170,6 +188,12 @@ if __name__ == '__main__':
     parser.add_argument('--use_PCA', action='store_true',
                         help='using PCA can reduce overall dimensionality and reduce computation resource assumption',
                         default=False)
+    
+    # ARIMA params
+    parser.add_argument('--p', type=int, default=12, help='ARIMA auto-regressive window size')
+    parser.add_argument('--d', type=int, default=1, help='ARIMA differentiation step')
+    parser.add_argument('--q', type=int, default=0, help='ARIMA moving-average window size')
+    parser.add_argument('--sample_steps', type=int, default=1, help='FlowModel sampling steps')
 
     args = parser.parse_args()
     if torch.cuda.is_available() and args.use_gpu:
@@ -190,23 +214,38 @@ if __name__ == '__main__':
 
     print('Args in experiment:')
     print_args(args)
-
-    if args.task_name == 'long_term_forecast':
-        Exp = Exp_Long_Term_Forecast
-    elif args.task_name == 'short_term_forecast':
-        Exp = Exp_Short_Term_Forecast
-    elif args.task_name == 'imputation':
-        Exp = Exp_Imputation
-    elif args.task_name == 'anomaly_detection':
-        Exp = Exp_Anomaly_Detection
-    elif args.task_name == 'anomaly_detection_ltm':
-        Exp = Exp_Anomaly_Detection_LTM
-    elif args.task_name == 'classification':
-        Exp = Exp_Classification
-    elif args.task_name == 'classification_ablation':
-        Exp = Exp_Classification_Ablation
+    
+    task_name_dict={
+        'long_term_forecast': Exp_Long_Term_Forecast,
+        'short_term_forecast': Exp_Short_Term_Forecast,
+        'test_time_forecast': Exp_Test_Time_Forecast,
+        'imputation': Exp_Imputation,
+        'anomaly_detection': Exp_Anomaly_Detection,
+        'anomaly_detection_ltm': Exp_Anomaly_Detection_LTM,
+        'classification': Exp_Classification,
+        'classification_ablation': Exp_Classification_Ablation,
+    }
+    if args.task_name in task_name_dict.keys():
+        Exp = task_name_dict[args.task_name]
     else:
-        Exp = Exp_Long_Term_Forecast
+        raise ValueError('Task name {} not supported'.format(args.task_name))
+
+    # if args.task_name == 'long_term_forecast':
+    #     Exp = Exp_Long_Term_Forecast
+    # elif args.task_name == 'short_term_forecast':
+    #     Exp = Exp_Short_Term_Forecast
+    # elif args.task_name == 'imputation':
+    #     Exp = Exp_Imputation
+    # elif args.task_name == 'anomaly_detection':
+    #     Exp = Exp_Anomaly_Detection
+    # elif args.task_name == 'anomaly_detection_ltm':
+    #     Exp = Exp_Anomaly_Detection_LTM
+    # elif args.task_name == 'classification':
+    #     Exp = Exp_Classification
+    # elif args.task_name == 'classification_ablation':
+    #     Exp = Exp_Classification_Ablation
+    # else:
+    #     Exp = Exp_Long_Term_Forecast
 
     if args.is_training:
         for ii in range(args.itr):

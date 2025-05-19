@@ -5,7 +5,7 @@ model_name=TimesNet
 python -u run.py \
   --task_name short_term_forecast \
   --is_training 1 \
-  --root_path ./dataset/m4 \
+  --root_path ../DATA/m4 \
   --seasonal_patterns 'Monthly' \
   --model_id m4_Monthly \
   --model $model_name \
@@ -29,7 +29,7 @@ python -u run.py \
 python -u run.py \
   --task_name short_term_forecast \
   --is_training 1 \
-  --root_path ./dataset/m4 \
+  --root_path ../DATA/m4 \
   --seasonal_patterns 'Yearly' \
   --model_id m4_Yearly \
   --model $model_name \

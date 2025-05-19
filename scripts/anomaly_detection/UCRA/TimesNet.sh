@@ -1,18 +1,17 @@
-export CUDA_VISIBLE_DEVICES=2
+export CUDA_VISIBLE_DEVICES=5
 
-dataset_dir="./dataset/UCR_Anomaly_FullData"
+dataset_dir="../DATA/UCR_Anomaly_FullData"
 counter=0
 
 for file_path in "$dataset_dir"/*
 do
 data=$(basename "$file_path")
-# data="004_UCR_Anomaly_DISTORTEDBIDMC1_2500_5400_5600.txt"
 ((counter++))
 echo $counter
 python -u run.py \
   --task_name anomaly_detection \
   --is_training 1 \
-  --root_path ./dataset/UCR_Anomaly_FullData \
+  --root_path ${dataset_dir} \
   --data_path $data \
   --model_id UCRA_$data \
   --model TimesNet \

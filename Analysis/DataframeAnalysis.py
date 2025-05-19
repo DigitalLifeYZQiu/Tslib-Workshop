@@ -5,6 +5,7 @@ from arch.unitroot import ADF, PhillipsPerron, DFGLS, KPSS, ZivotAndrews, Varian
 from scipy.fftpack import fft, fftfreq
 import pandas as pd
 from typing import Optional
+from typing import Dict, Tuple
 
 
 class DataframeAnalysis():

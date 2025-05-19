@@ -1,0 +1,25 @@
+<component name="ProjectRunConfigurationManager">
+  <configuration default="false" name="torch_ARIMA_BFGS" type="PythonConfigurationType" factoryName="Python">
+    <module name="TSlib-Workshop" />
+    <option name="ENV_FILES" value="" />
+    <option name="INTERPRETER_OPTIONS" value="" />
+    <option name="PARENT_ENVS" value="true" />
+    <envs>
+      <env name="PYTHONUNBUFFERED" value="1" />
+    </envs>
+    <option name="SDK_HOME" value="" />
+    <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$" />
+    <option name="IS_MODULE_SDK" value="true" />
+    <option name="ADD_CONTENT_ROOTS" value="true" />
+    <option name="ADD_SOURCE_ROOTS" value="true" />
+    <EXTENSION ID="PythonCoverageRunConfigurationExtension" runner="coverage.py" />
+    <option name="SCRIPT_NAME" value="$PROJECT_DIR$/run.py" />
+    <option name="PARAMETERS" value="--task_name long_term_forecast --is_training 0 --root_path ../DATA/ETT-small/ --data_path ETTh1.csv --model_id torch_ARIMA_BFGS-debug --model torch_ARIMA_BFGS --data ETTh1 --features S --batch_size 32 --seq_len 96 --label_len 48 --pred_len 96 --des 'Exp' --train_epochs 10 --learning_rate 0.01 --p 12 --d 1 --q 1 --itr 1" />
+    <option name="SHOW_COMMAND_LINE" value="false" />
+    <option name="EMULATE_TERMINAL" value="false" />
+    <option name="MODULE_MODE" value="false" />
+    <option name="REDIRECT_INPUT" value="false" />
+    <option name="INPUT_FILE" value="" />
+    <method v="2" />
+  </configuration>
+</component>

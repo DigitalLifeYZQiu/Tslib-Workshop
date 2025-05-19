@@ -74,7 +74,7 @@ class Exp_Anomaly_Detection_LTM(Exp_Basic):
                     true = batch_x[:, :, f_dim:].detach().cpu()
                     mask = mask[:, :, f_dim:].detach().cpu()
                     # import pdb; pdb.set_trace()
-                    loss = criterion(pred[mask == 0], true[mask == 0])
+                    loss = criterion(pred, true)
                 else:
                     outputs = self.model(batch_x, None, None, None)
 
@@ -141,7 +141,7 @@ class Exp_Anomaly_Detection_LTM(Exp_Basic):
                     true = batch_x[:, :, f_dim:]
                     mask = mask[:, :, f_dim:]
                     # import pdb; pdb.set_trace()
-                    loss = criterion(pred[mask == 0], true[mask == 0])
+                    loss = criterion(pred, true)
                 else:
                     outputs = self.model(batch_x, None, None, None)
 
@@ -165,7 +165,7 @@ class Exp_Anomaly_Detection_LTM(Exp_Basic):
             train_loss = np.average(train_loss)
             vali_loss = self.vali(vali_data, vali_loader, criterion)
             test_loss = self.vali(test_data, test_loader, criterion)
-            self.test(setting)
+            self.test(setting, csv_record=False)
 
             print("Epoch: {0}, Steps: {1} | Train Loss: {2:.7f} Vali Loss: {3:.7f} Test Loss: {4:.7f}".format(
                 epoch + 1, train_steps, train_loss, vali_loss, test_loss))
@@ -180,7 +180,7 @@ class Exp_Anomaly_Detection_LTM(Exp_Basic):
 
         return self.model
 
-    def test(self, setting, test=0):
+    def test(self, setting, test=0, csv_record=True):
         test_data, test_loader = self._get_data(flag='test')
         train_data, train_loader = self._get_data(flag='train')
         if test and self.args.ckpt_path is None:
@@ -261,47 +261,35 @@ class Exp_Anomaly_Detection_LTM(Exp_Basic):
         print("adjAccuracy : {:0.4f}, adjPrecision : {:0.4f}, adjRecall : {:0.4f}, adjF-score : {:0.4f} ".format(
             adjaccuracy, adjprecision, adjrecall, adjf_score))
         
-        # Write results to CSV file
-        results = {
-            "setting": [setting],
-            'Accuracy': accuracy,
-            'Precision': precision,
-            'Recall': recall,
-            'F-score': f_score,
-            'adjAccuracy': adjaccuracy,
-            'adjPrecision': adjprecision,
-            'adjRecall': adjrecall,
-            'adjF-score': adjf_score
-        }
-        # 将非迭代的值包装在列表中
-        for key in results:
-            if not isinstance(results[key], collections.abc.Iterable):
-                results[key] = [results[key]]
         
-        csv_file = 'results.csv'
-        
-        with open(csv_file, 'a', newline='') as file:
-            writer = csv.writer(file)
-            if file.tell() == 0:
-                writer.writerow(results.keys())
-            writer.writerows(zip(*results.values()))
-        
-        print("Results appended to", csv_file)
-        
-        # 将非迭代的值包装在列表中
-        for key in results:
-            if not isinstance(results[key], collections.abc.Iterable):
-                results[key] = [results[key]]
-        
-        csv_file = folder_path + '/' + 'results.csv'
-        
-        with open(csv_file, 'a', newline='') as file:
-            writer = csv.writer(file)
-            if file.tell() == 0:
-                writer.writerow(results.keys())
-            writer.writerows(zip(*results.values()))
-        
-        print("Results appended to", csv_file)
+        if csv_record:
+            # Write results to CSV file
+            import csv, collections
+            results = {
+                "setting": [setting],
+                'Accuracy': accuracy,
+                'Precision': precision,
+                'Recall': recall,
+                'F-score': f_score,
+                'adjAccuracy': adjaccuracy,
+                'adjPrecision': adjprecision,
+                'adjRecall': adjrecall,
+                'adjF-score': adjf_score
+            }
+            # 将非迭代的值包装在列表中
+            for key in results:
+                if not isinstance(results[key], collections.abc.Iterable):
+                    results[key] = [results[key]]
+            
+            csv_file = self.args.csv_file
+            
+            with open(csv_file, 'a', newline='') as file:
+                writer = csv.writer(file)
+                if file.tell() == 0:
+                    writer.writerow(results.keys())
+                writer.writerows(zip(*results.values()))
+            
+            print("Results appended to", csv_file)
         
         # * visualization
         # file_path_border = folder_path + '/' + self.args.data_path[:self.args.data_path.find('.')] + '_AE_border.pdf'
