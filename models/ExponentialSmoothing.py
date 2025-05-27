@@ -21,7 +21,7 @@ class Model(nn.Module):
 		self.seq_len = configs.seq_len
 		self.label_len = configs.label_len
 		self.pred_len = configs.pred_len
-		self.backbone = ExponentialSmoothing()
+		self.backbone = ExponentialSmoothing(trend=ModelMode.ADDITIVE, seasonal=SeasonalityMode.NONE)
 		self.fit(configs)
 	
 	def fit(self, configs):
