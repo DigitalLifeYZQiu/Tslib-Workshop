@@ -6,7 +6,7 @@ from models import Autoformer, Transformer, TimesNet, Nonstationary_Transformer,
     TimeBert, ARIMA, AutoARIMA, DeepARIMA, LinearRegression, ExponentialSmoothing, Theta, KalmanFilter, RandomForest, \
     XGBoost, LightGBM, ARIMA_tta, AutoARIMA_tta, DeepARIMA_tta, ARIMA_plus, ARIMA_plus_tta, moment, TimeMixerPP, \
     torch_ARIMA, torch_ARIMA_MSE, torch_ARIMA_NLL, torch_ARIMA_BFGS, torch_ARIMA_nnModule, torch_ARI_nnModule, \
-    ARIMAppMK1, \
+    ARIMAppMK1, NBEATS, Prophets,\
     ARIMAlinMK1, ARIMAppMK2, ARIMAlinMK2, ARIMAppMK3, ARIMAppMK4, ARIMAlinMK3
 
 
@@ -70,6 +70,8 @@ class Exp_Basic(object):
             'RandomForest': RandomForest,
             'XGBoost': XGBoost,
             'LightGBM': LightGBM,
+            'NBEATS': NBEATS,
+            'Prophets': Prophets,
             'ARIMA_tta': ARIMA_tta,
             'AutoARIMA_tta': AutoARIMA_tta,
             'DeepARIMA_tta': DeepARIMA_tta,

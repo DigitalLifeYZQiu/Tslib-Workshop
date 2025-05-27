@@ -1,6 +1,7 @@
 from data_provider.data_loader import Dataset_ETT_hour, Dataset_ETT_minute, Dataset_Custom, Dataset_M4, PSMSegLoader, \
     MSLSegLoader, SMAPSegLoader, SMDSegLoader, SWATSegLoader, UEAloader, UCRAnomalyloader, SMDSegLoader_Original, \
-    MSLSegLoader_Original, PSMSegLoader_Original, SMAPSegLoader_Original, SWATSegLoader_Original, PressureDataset
+    MSLSegLoader_Original, PSMSegLoader_Original, SMAPSegLoader_Original, SWATSegLoader_Original, PressureDataset, \
+    Dataset_Xiexin, Dataset_Xiexin_SpotTradeLoad, Dataset_Xiexin_PowerLoad
 from data_provider.uea import collate_fn
 from torch.utils.data import DataLoader
 
@@ -28,7 +29,10 @@ data_dict = {
     'UEA': UEAloader,
     'UCRA': UCRAnomalyloader,
     'STPrice': Dataset_Custom,
-    'Aircraft': PressureDataset
+    'Aircraft': PressureDataset,
+    'xiexin': Dataset_Xiexin,
+    'Xiexin_SpotTradeLoad': Dataset_Xiexin_SpotTradeLoad,
+    'Xiexin_PowerLoad': Dataset_Xiexin_PowerLoad,
 }
 
 class DatasetCatalog:

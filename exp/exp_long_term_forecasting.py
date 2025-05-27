@@ -259,10 +259,10 @@ class Exp_Long_Term_Forecast(Exp_Basic):
             dtw = 'Not calculated'
 
         mae, mse, rmse, mape, mspe = metric(preds, trues)
-        print('mse:{}, mae:{}, dtw:{}'.format(mse, mae, dtw))
+        print('mse:{}, mae:{}, rmse:{}, mape:{}, mspe:{}, dtw:{}'.format(mse, mae, rmse, mape, mspe, dtw))
         f = open(folder_path+"/result_long_term_forecast.txt", 'a')
         f.write(setting + "  \n")
-        f.write('mse:{}, mae:{}, dtw:{}'.format(mse, mae, dtw))
+        f.write('mse:{}, mae:{}, rmse:{}, mape:{}, mspe:{}, dtw:{}'.format(mse, mae, rmse, mape, mspe, dtw))
         f.write('\n')
         f.write('\n')
         f.close()
