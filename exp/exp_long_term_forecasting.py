@@ -257,7 +257,15 @@ class Exp_Long_Term_Forecast(Exp_Basic):
             dtw = np.array(dtw_list).mean()
         else:
             dtw = 'Not calculated'
-
+            
+        if "Xiexin_Powerload" in self.args.data:
+            print("using spot trade evaluation on last 24 hours(-96)")
+            preds = preds[:, -96:]
+            trues = trues[:, -96:]
+        elif "Xiexin_SpotTrade" in self.args.data:
+            print("using spot trade evaluation on last 24 hours(-24)")
+            preds = preds[:, -24:]
+            trues = trues[:, -24:]
         mae, mse, rmse, mape, mspe = metric(preds, trues)
         print('mse:{}, mae:{}, rmse:{}, mape:{}, mspe:{}, dtw:{}'.format(mse, mae, rmse, mape, mspe, dtw))
         f = open(folder_path+"/result_long_term_forecast.txt", 'a')

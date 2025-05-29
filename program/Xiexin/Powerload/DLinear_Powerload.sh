@@ -1,4 +1,4 @@
-export CUDA_VISIBLE_DEVICES=3
+export CUDA_VISIBLE_DEVICES=4
 
 model_name=DLinear
 data=Xiexin_PowerLoad
@@ -10,7 +10,7 @@ logger=logs/${model_name}/${model_name}_${data}.log
 > "${logger}"
 
 # ETTh1
-for seq_len in 160
+for seq_len in 2880
 do
 for pred_len in 160
 do
@@ -30,7 +30,7 @@ python -u run.py \
   --features S \
   --seq_len $seq_len \
   --pred_len $pred_len \
-  --des 'Exp' \
+  --des Exp${id} \
   --target $OT \
   --inverse \
   --batch_size 1024 \
@@ -50,7 +50,7 @@ python -u run.py \
   --features S \
   --seq_len $seq_len \
   --pred_len $pred_len \
-  --des 'Exp' \
+  --des Exp${id} \
   --target $OT \
   --batch_size 1024 \
   --e_layers 1 \
